@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env, Symbol};
+use soroban_sdk::{contracttype, contractevent, Address, Env};
 use crate::DataKey;
 
 pub const MIN_SWITCH_DURATION: u64 = 30 * 24 * 60 * 60;
@@ -116,10 +116,13 @@ pub fn nominate_backup(
         last_activity: now,
     });
     env.storage().instance().set(&succession_key(vault_id), &state);
-    env.events().publish(
-        (Symbol::new(env, "backup_nominated"), vault_id),
-        (primary.clone(), backup, switch_duration, challenge_window),
-    );
+    BackupNominatedEvent {
+        vault_id,
+        primary: primary.clone(),
+        backup,
+        switch_duration,
+        challenge_window,
+    }.publish(env);
 }
 
 pub fn revoke_backup(env: &Env, vault_id: u64, primary: &Address) {
@@ -134,10 +137,10 @@ pub fn revoke_backup(env: &Env, vault_id: u64, primary: &Address) {
     env.storage()
         .instance()
         .set(&succession_key(vault_id), &SuccessionState::None);
-    env.events().publish(
-        (Symbol::new(env, "backup_revoked"), vault_id),
-        primary.clone(),
-    );
+    BackupRevokedEvent {
+        vault_id,
+        primary: primary.clone(),
+    }.publish(env);
 }
 
 pub fn update_activity(env: &Env, vault_id: u64) {
@@ -160,10 +163,10 @@ pub fn update_activity(env: &Env, vault_id: u64) {
                 last_activity: now,
             });
             env.storage().instance().set(&succession_key(vault_id), &updated);
-            env.events().publish(
-                (Symbol::new(env, "claim_cancelled"), vault_id),
+            ClaimCancelledEvent {
+                vault_id,
                 backup,
-            );
+            }.publish(env);
         }
         SuccessionState::None | SuccessionState::Succeeded(_) => {}
     }
@@ -193,10 +196,11 @@ pub fn initiate_succession_claim(env: &Env, vault_id: u64, caller: &Address) {
                 switch_duration: data.switch_duration,
             });
             env.storage().instance().set(&succession_key(vault_id), &state);
-            env.events().publish(
-                (Symbol::new(env, "succession_claimed"), vault_id),
-                (backup, now),
-            );
+            SuccessionClaimedEvent {
+                vault_id,
+                backup,
+                timestamp: now,
+            }.publish(env);
         }
     }
 }
@@ -223,10 +227,11 @@ pub fn finalise_succession(env: &Env, vault_id: u64, caller: &Address) -> Addres
                 succeeded_at: now,
             });
             env.storage().instance().set(&succession_key(vault_id), &state);
-            env.events().publish(
-                (Symbol::new(env, "succession_finalised"), vault_id),
-                (new_owner.clone(), now),
-            );
+            SuccessionFinalisedEvent {
+                vault_id,
+                new_owner: new_owner.clone(),
+                timestamp: now,
+            }.publish(env);
             new_owner
         }
     }
@@ -249,10 +254,10 @@ pub fn cancel_succession_claim(env: &Env, vault_id: u64, primary: &Address) {
                 last_activity: now,
             });
             env.storage().instance().set(&succession_key(vault_id), &state);
-            env.events().publish(
-                (Symbol::new(env, "claim_cancelled"), vault_id),
-                (primary.clone(), backup),
-            );
+            ClaimCancelledEvent {
+                vault_id,
+                backup: backup.clone(),
+            }.publish(env);
         }
     }
 }
@@ -294,4 +299,51 @@ pub fn get_succession_status(env: &Env, vault_id: u64, primary: Address) -> Succ
             state,
         },
     }
+}
+
+// Typed events for inheritance flows
+#[contractevent]
+pub struct BackupNominatedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub primary: Address,
+    #[topic]
+    pub backup: Address,
+    pub switch_duration: u64,
+    pub challenge_window: u64,
+}
+
+#[contractevent]
+pub struct BackupRevokedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub primary: Address,
+}
+
+#[contractevent]
+pub struct ClaimCancelledEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub backup: Address,
+}
+
+#[contractevent]
+pub struct SuccessionClaimedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub backup: Address,
+    pub timestamp: u64,
+}
+
+#[contractevent]
+pub struct SuccessionFinalisedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub new_owner: Address,
+    pub timestamp: u64,
 }

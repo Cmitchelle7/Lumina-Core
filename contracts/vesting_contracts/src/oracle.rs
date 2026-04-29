@@ -6,6 +6,8 @@ pub enum OracleType {
     TVL, // Total Value Locked
     Price, // Token price target
     Custom, // Custom condition
+    NetworkGrowth, // Network growth percentage for anti-dilution
+    Inflation, // Inflation rate for anti-dilution
 }
 
 #[contracttype]
@@ -51,10 +53,6 @@ pub struct OracleQuery {
     pub require_all: bool,
 }
 
-pub trait OracleInterface {
-    fn query_value(env: &Env, oracle_type: OracleType, parameter: Option<Symbol>) -> i128;
-}
-
 pub struct OracleClient;
 
 impl OracleClient {
@@ -62,7 +60,7 @@ impl OracleClient {
         Self
     }
 
-    pub fn is_cliff_passed(env: &Env, cliff: &PerformanceCliff, vault_id: u64) -> bool {
+    pub fn is_cliff_passed(env: &Env, cliff: &PerformanceCliff, _vault_id: u64) -> bool {
         // First try to evaluate oracle conditions
         if
             let Some(result) = Self::evaluate_oracle_conditions(
@@ -115,10 +113,10 @@ impl OracleClient {
         }
     }
 
-    fn query_oracle(env: &Env, condition: &OracleCondition) -> i128 {
+    fn query_oracle(_env: &Env, condition: &OracleCondition) -> i128 {
         // This would make a cross-contract call to the oracle contract
         // For now, we'll implement a basic interface that can be extended
-        let oracle_address = condition.oracle_address.clone();
+        let _oracle_address = condition.oracle_address.clone();
 
         // In a real implementation, this would be:
         // let oracle_client = OracleContractClient::new(env, &oracle_address);
@@ -182,18 +180,49 @@ impl OracleClient {
         }
     }
 
-    pub fn get_multiplier(env: &Env, multiplier: &PerformanceMultiplier) -> u32 {
-        let current_value = Self::query_oracle(env, &multiplier.condition);
-        let condition_met = Self::compare_values(
-            current_value,
-            multiplier.condition.target_value,
-            &multiplier.condition.operator
-        );
-
-        if condition_met {
-            multiplier.multiplier_bps
-        } else {
-            multiplier.fallback_multiplier_bps
+    pub fn create_network_growth_condition(
+        oracle_address: Address,
+        target_growth: i128,
+        operator: ComparisonOperator
+    ) -> OracleCondition {
+        OracleCondition {
+            oracle_address,
+            oracle_type: OracleType::NetworkGrowth,
+            target_value: target_growth,
+            operator,
+            parameter: None,
         }
+    }
+
+    pub fn create_inflation_condition(
+        oracle_address: Address,
+        target_inflation: i128,
+        operator: ComparisonOperator
+    ) -> OracleCondition {
+        OracleCondition {
+            oracle_address,
+            oracle_type: OracleType::Inflation,
+            target_value: target_inflation,
+            operator,
+            parameter: None,
+        }
+    }
+
+    /// Queries network growth value from oracle (returns percentage in basis points)
+    pub fn query_network_growth(_env: &Env, _oracle_address: &Address) -> i128 {
+        // This would make a cross-contract call to the oracle contract
+        // For now, return 0 as placeholder - should be replaced with actual oracle call
+        // let oracle_client = NetworkGrowthOracleClient::new(env, oracle_address);
+        // oracle_client.get_growth_percentage()
+        0
+    }
+
+    /// Queries inflation rate from oracle (returns percentage in basis points)
+    pub fn query_inflation_rate(_env: &Env, _oracle_address: &Address) -> i128 {
+        // This would make a cross-contract call to the oracle contract
+        // For now, return 0 as placeholder - should be replaced with actual oracle call
+        // let oracle_client = InflationOracleClient::new(env, oracle_address);
+        // oracle_client.get_inflation_rate()
+        0
     }
 }

@@ -1,11 +1,11 @@
-/// Auto-stake module for the Vesting Vault.
+﻿/// Auto-stake module for the Vesting Vault.
 ///
 /// Tokens never leave the vault. Staking registers the vault's locked balance
 /// as an active stake on a whitelisted external staking contract via a
 /// synchronous cross-contract call. Yield accrues on the staking contract and
 /// is pulled back to the beneficiary via `claim_yield`. Revocation always
 /// unstakes before returning tokens to the treasury.
-use soroban_sdk::{contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, contractevent, Address, Env, Symbol, Vec};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +55,7 @@ pub enum StakeError {
     AlreadyStaked,
     /// Vault is not currently staked.
     NotStaked,
-    /// Vault has zero locked balance — nothing to stake.
+    /// Vault has zero locked balance â€” nothing to stake.
     InsufficientBalance,
     /// The supplied staking contract address is not on the whitelist.
     UnauthorizedStakingContract,
@@ -202,29 +202,56 @@ pub fn call_claim_yield_for(
 // ---------------------------------------------------------------------------
 
 pub fn emit_staked(env: &Env, vault_id: u64, beneficiary: &Address, amount: i128, staking_contract: &Address) {
-    env.events().publish(
-        (Symbol::new(env, "auto_staked"), vault_id),
-        (beneficiary.clone(), amount, staking_contract.clone()),
-    );
+    AutoStakedEvent { vault_id, beneficiary: beneficiary.clone(), amount, staking_contract: staking_contract.clone() }.publish(env);
 }
 
 pub fn emit_unstaked(env: &Env, vault_id: u64, beneficiary: &Address, amount: i128) {
-    env.events().publish(
-        (Symbol::new(env, "auto_unstaked"), vault_id),
-        (beneficiary.clone(), amount),
-    );
+    AutoUnstakedEvent { vault_id, beneficiary: beneficiary.clone(), amount }.publish(env);
 }
 
 pub fn emit_yield_claimed(env: &Env, vault_id: u64, beneficiary: &Address, amount: i128) {
-    env.events().publish(
-        (Symbol::new(env, "yield_claimed"), vault_id),
-        (beneficiary.clone(), amount),
-    );
+    YieldClaimedEvent { vault_id, beneficiary: beneficiary.clone(), amount }.publish(env);
 }
 
 pub fn emit_revocation_unstaked(env: &Env, vault_id: u64, beneficiary: &Address) {
-    env.events().publish(
-        (Symbol::new(env, "revoc_unstaked"), vault_id),
-        beneficiary.clone(),
-    );
+    RevocationUnstakedEvent { vault_id, beneficiary: beneficiary.clone() }.publish(env);
+}
+
+// Typed contract events for staking operations. Using `#[contractevent]`
+// ensures the event payload implements the runtime conversion traits and
+// removes the deprecated untyped `env.events().publish((Symbol,..), ..)` calls.
+#[contractevent]
+pub struct AutoStakedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub beneficiary: Address,
+    pub amount: i128,
+    pub staking_contract: Address,
+}
+
+#[contractevent]
+pub struct AutoUnstakedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub beneficiary: Address,
+    pub amount: i128,
+}
+
+#[contractevent]
+pub struct YieldClaimedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub beneficiary: Address,
+    pub amount: i128,
+}
+
+#[contractevent]
+pub struct RevocationUnstakedEvent {
+    #[topic]
+    pub vault_id: u64,
+    #[topic]
+    pub beneficiary: Address,
 }

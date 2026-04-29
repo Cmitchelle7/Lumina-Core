@@ -7,7 +7,7 @@ use soroban_sdk::{
     Vec,
 };
 
-use vesting_contracts::{VestingContract, VestingContractClient};
+use vesting_contracts::{VestingContract, VestingContractClient, AdminAction, ScheduleConfig, AssetAllocationEntry};
 
 #[contract]
 struct MultisigAccount;
@@ -142,23 +142,17 @@ fn create_vault_succeeds_with_multisig_admin_threshold_met() {
     env.ledger().set_sequence_number(1);
     env.ledger().set_timestamp(1_000);
 
-    // Multisig admin custom account.
-    let multisig_id = env.register(MultisigAccount, ());
-    let multisig_client = MultisigAccountClient::new(&env, &multisig_id);
-
     let s1 = Address::generate(&env);
     let s2 = Address::generate(&env);
     let s3 = Address::generate(&env);
-    let mut signers = Vec::new(&env);
-    signers.push_back(s1.clone());
-    signers.push_back(s2.clone());
-    signers.push_back(s3.clone());
-    multisig_client.init(&signers, &2u32);
+    let mut admins = Vec::new(&env);
+    admins.push_back(s1.clone());
+    admins.push_back(s2.clone());
+    admins.push_back(s3.clone());
 
-    // Vesting contract with multisig as admin.
     let vesting_id = env.register(VestingContract, ());
     let vesting = VestingContractClient::new(&env, &vesting_id);
-    vesting.initialize(&multisig_id, &1_000_000i128);
+    vesting.initialize_multisig(&admins, &2u32, &1_000_000i128);
 
     let beneficiary = Address::generate(&env);
     let now = env.ledger().timestamp();
@@ -168,42 +162,33 @@ fn create_vault_succeeds_with_multisig_admin_threshold_met() {
     let end = now + 1_000;
     let is_revocable = true;
     let is_transferable = false;
-    let step_duration = 0u64;
+    let token = Address::generate(&env);
 
-    // Provide an authorization entry for the multisig admin where signatures contain >= threshold signers.
-    let args: Vec<Val> = (
-        beneficiary.clone(),
-        amount,
-        start,
-        end,
+    let cfg = ScheduleConfig {
+        owner: beneficiary.clone(),
+        asset_basket: soroban_sdk::vec![&env, AssetAllocationEntry {
+            asset_id: token,
+            total_amount: amount,
+            released_amount: 0,
+            locked_amount: 0,
+            percentage: 10000,
+        }],
+        start_time: start,
+        end_time: end,
         keeper_fee,
         is_revocable,
         is_transferable,
-        step_duration,
-    )
-        .into_val(&env);
-    let entry = auth_entry_for_multisig(
-        &env,
-        &multisig_id,
-        &vesting_id,
-        "create_vault_full",
-        args,
-        signatures_scval(&[s1.clone(), s2.clone()]),
-        1,
-    );
-    env.set_auths(&[entry]);
+    };
+    let action = AdminAction::AddBeneficiary(beneficiary.clone(), cfg);
 
-    let vault_id = vesting.create_vault_full(
-        &beneficiary,
-        &amount,
-        &start,
-        &end,
-        &keeper_fee,
-        &is_revocable,
-        &is_transferable,
-        &step_duration,
-    );
-    assert_eq!(vault_id, 1u64);
+    env.mock_all_auths();
+    let proposal_id = vesting.propose_admin_action(&s1, &action);
+
+    env.mock_all_auths();
+    vesting.sign_admin_proposal(&s2, &proposal_id);
+
+    let sig_count = vesting.admin_proposal_signature_count(&proposal_id);
+    assert_eq!(sig_count, 2u32);
 }
 
 #[test]
@@ -237,7 +222,6 @@ fn create_vault_panics_when_multisig_threshold_not_met() {
     let is_transferable = false;
     let step_duration = 0u64;
 
-    // Only one signer provided, but threshold is 2.
     let args: Vec<Val> = (
         beneficiary.clone(),
         amount,
