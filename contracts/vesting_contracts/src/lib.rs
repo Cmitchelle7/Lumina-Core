@@ -10,10 +10,7 @@ pub use errors::Error;
 mod factory;
 pub use factory::{VestingFactory, VestingFactoryClient};
 mod oracle;
-pub use oracle::{
-    ComparisonOperator, OracleClient, OracleCondition, OracleType, PerformanceCliff,
-    PerformanceMultiplier,
-};
+pub use oracle::{ComparisonOperator, OracleClient, OracleCondition, OracleType, PerformanceCliff};
 
 pub mod stake;
 pub use stake::{
@@ -731,9 +728,6 @@ impl VestingContract {
                     true,
                 );
             }
-            AdminAction::AddGroupScheduleSplit(cfg) => {
-                let _ids = Self::add_group_schedule_split_internal(&env, cfg);
-            }
             AdminAction::GrantManagerRights(manager, asset, amount) => {
                 let pool = SubAdminPool {
                     manager: manager.clone(),
@@ -1385,46 +1379,6 @@ impl VestingContract {
                 s.is_revocable,
                 s.is_transferable,
                 0, // step_duration
-                true,
-            );
-            ids.push_back(id);
-        }
-        ids
-    }
-
-    /// Create one group schedule and split it across multiple beneficiaries by basis points.
-    /// Uses deterministic integer math and remainder distribution so total amounts are conserved.
-    pub fn add_group_schedule_split(env: Env, config: GroupScheduleConfig) -> Vec<u64> {
-        Self::require_admin(&env);
-        if Self::multisig_active(&env) {
-            panic!("Use AdminProposal for multisig");
-        }
-        Self::add_group_schedule_split_internal(&env, config)
-    }
-
-    fn add_group_schedule_split_internal(env: &Env, config: GroupScheduleConfig) -> Vec<u64> {
-        let total_amount = Self::validate_group_schedule_config(&config);
-        Self::require_deposited_tokens_for_batch(env, total_amount);
-        Self::reserve_admin_balance_for_batch(env, total_amount);
-
-        let mut ids = Vec::new(env);
-        for split in config.beneficiaries.iter() {
-            let split_basket = Self::build_split_basket(
-                env,
-                &config.asset_basket,
-                &config.beneficiaries,
-                &split.beneficiary,
-            );
-            let id = Self::create_vault_prefunded_internal(
-                env,
-                split.beneficiary,
-                split_basket,
-                config.start_time,
-                config.end_time,
-                config.keeper_fee,
-                config.is_revocable,
-                config.is_transferable,
-                config.step_duration,
                 true,
             );
             ids.push_back(id);
@@ -6554,6 +6508,8 @@ impl VestingContract {
 
     // Private helper methods for legal document integration
 }
+
+// Redefinition removed
 
 #[cfg(test)]
 mod beneficiary_reassignment_test;
