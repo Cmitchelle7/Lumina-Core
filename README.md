@@ -1,3 +1,7 @@
+# Lumina Network — Core Contracts
+
+Smart contracts for blockchain-based vesting vault and token streaming infrastructure with governance, compliance, and cross-chain capabilities on Stellar Soroban.
+
 ## Deployed Contract
 - **Network:** Stellar Testnet
 - **Contract ID:** CD6OGC46OFCV52IJQKEDVKLX5ASA3ZMSTHAAZQIPDSJV6VZ3KUJDEP4D
