@@ -1087,6 +1087,7 @@ impl VestingVault {
             vesting_id,
             timestamp: e.ledger().timestamp(),
         }.publish(&e);
+        Ok(())
     }
     
     /// Claim tokens with lock-up period handling
