@@ -217,10 +217,10 @@ pub fn emit_revocation_unstaked(env: &Env, vault_id: u64, beneficiary: &Address)
     RevocationUnstakedEvent { vault_id, beneficiary: beneficiary.clone() }.publish(env);
 }
 
-// Typed contract events for staking operations. Using `#[contractevent]`
+// Typed contract events for staking operations. Using `#[event]`
 // ensures the event payload implements the runtime conversion traits and
 // removes the deprecated untyped `env.events().publish((Symbol,..), ..)` calls.
-#[contractevent]
+#[event]
 pub struct AutoStakedEvent {
     #[topic]
     pub vault_id: u64,
@@ -230,7 +230,7 @@ pub struct AutoStakedEvent {
     pub staking_contract: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct AutoUnstakedEvent {
     #[topic]
     pub vault_id: u64,
@@ -239,7 +239,7 @@ pub struct AutoUnstakedEvent {
     pub amount: i128,
 }
 
-#[contractevent]
+#[event]
 pub struct YieldClaimedEvent {
     #[topic]
     pub vault_id: u64,
@@ -248,7 +248,7 @@ pub struct YieldClaimedEvent {
     pub amount: i128,
 }
 
-#[contractevent]
+#[event]
 pub struct RevocationUnstakedEvent {
     #[topic]
     pub vault_id: u64,
