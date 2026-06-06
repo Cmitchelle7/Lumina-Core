@@ -12,7 +12,7 @@ pub struct BailoutRequest {
     pub executed: bool,
 }
 
-#[contractevent]
+#[event]
 pub struct InsuranceFundCapitalized {
     #[topic]
     pub asset: Address,
@@ -20,7 +20,7 @@ pub struct InsuranceFundCapitalized {
     pub total_balance: i128,
 }
 
-#[contractevent]
+#[event]
 pub struct BailoutRequested {
     #[topic]
     pub request_id: u64,
@@ -32,7 +32,7 @@ pub struct BailoutRequested {
     pub requested_at: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct BailoutExecuted {
     #[topic]
     pub request_id: u64,
