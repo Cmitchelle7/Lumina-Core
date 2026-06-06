@@ -302,7 +302,7 @@ pub fn get_succession_status(env: &Env, vault_id: u64, primary: Address) -> Succ
 }
 
 // Typed events for inheritance flows
-#[contractevent]
+#[event]
 pub struct BackupNominatedEvent {
     #[topic]
     pub vault_id: u64,
@@ -314,7 +314,7 @@ pub struct BackupNominatedEvent {
     pub challenge_window: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct BackupRevokedEvent {
     #[topic]
     pub vault_id: u64,
@@ -322,7 +322,7 @@ pub struct BackupRevokedEvent {
     pub primary: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct ClaimCancelledEvent {
     #[topic]
     pub vault_id: u64,
@@ -330,7 +330,7 @@ pub struct ClaimCancelledEvent {
     pub backup: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct SuccessionClaimedEvent {
     #[topic]
     pub vault_id: u64,
@@ -339,7 +339,7 @@ pub struct SuccessionClaimedEvent {
     pub timestamp: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct SuccessionFinalisedEvent {
     #[topic]
     pub vault_id: u64,
