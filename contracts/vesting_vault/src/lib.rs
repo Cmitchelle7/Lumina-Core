@@ -216,7 +216,7 @@ impl VestingVault {
 
     /// Sets an authorized payout address with a 48-hour timelock
     /// This provides multi-layer defense against phishing hacks
-    pub fn set_authorized_payout_address(e: Env, beneficiary: Address, authorized_address: Address) {
+    pub fn set_authorized_payout_address(e: Env, beneficiary: Address, authorized_address: Address) -> Result<(), Error> {
         beneficiary.require_auth();
         
         let current_time = e.ledger().timestamp();
@@ -284,7 +284,7 @@ impl VestingVault {
 
     /// Removes the authorized payout address (immediate effect)
     /// This allows beneficiaries to disable the whitelisting feature
-    pub fn remove_authorized_payout_address(e: Env, beneficiary: Address) {
+    pub fn remove_authorized_payout_address(e: Env, beneficiary: Address) -> Result<(), Error> {
         beneficiary.require_auth();
         
         // Remove the authorized address
@@ -483,7 +483,7 @@ impl VestingVault {
     
     /// Set the reputation bridge contract address
     /// Set the cross-project reputation bridge contract address (admin only).
-    pub fn set_reputation_bridge(e: Env, admin: Address, bridge_contract: Address) {
+    pub fn set_reputation_bridge(e: Env, admin: Address, bridge_contract: Address) -> Result<(), Error> {
         admin.require_auth();
         set_reputation_bridge_contract(&e, &bridge_contract);
     }
@@ -789,7 +789,7 @@ impl VestingVault {
     
     /// Configure path payment settings for auto-exit feature
     /// This allows users to claim tokens and instantly swap them for USDC in one transaction
-    pub fn configure_path_payment(e: Env, admin: Address, destination_asset: Address, min_destination_amount: i128, path: Vec<Address>) {
+    pub fn configure_path_payment(e: Env, admin: Address, destination_asset: Address, min_destination_amount: i128, path: Vec<Address>) -> Result<(), Error> {
         admin.require_auth();
         
         let config = PathPaymentConfig {
@@ -806,7 +806,7 @@ impl VestingVault {
     }
     
     /// Disable path payment feature
-    pub fn disable_path_payment(e: Env, admin: Address) {
+    pub fn disable_path_payment(e: Env, admin: Address) -> Result<(), Error> {
         admin.require_auth();
         
         if let Some(mut config) = get_path_payment_config(&e) {
@@ -1077,7 +1077,7 @@ impl VestingVault {
     
     /// Disable lock-up period for a vesting schedule
     /// This allows immediate claims without lock-up restrictions
-    pub fn disable_lockup(e: Env, admin: Address, vesting_id: u32) {
+    pub fn disable_lockup(e: Env, admin: Address, vesting_id: u32) -> Result<(), Error> {
         admin.require_auth();
         
         remove_lockup_config(&e, vesting_id);
@@ -1130,7 +1130,7 @@ impl VestingVault {
             if lockup_config.enabled {
                 // Issue wrapped tokens instead of raw tokens
                 Self::issue_wrapped_tokens(&e, &user, vesting_id, amount, &lockup_config);
-                return;
+                return Ok(());
             }
         }
 
@@ -1195,7 +1195,7 @@ impl VestingVault {
 
     /// Initialize total token supply for governance calculations
     /// Initialise the total token supply used for governance veto-power calculations.
-    pub fn initialize_token_supply(e: Env, admin: Address, total_supply: i128) {
+    pub fn initialize_token_supply(e: Env, admin: Address, total_supply: i128) -> Result<(), Error> {
         admin.require_auth();
         
         let supply_info = TokenSupplyInfo {
@@ -1208,7 +1208,7 @@ impl VestingVault {
     
     /// Update total token supply (for dynamic supply tracking)
     /// Update the total token supply (for dynamic supply tracking).
-    pub fn update_token_supply(e: Env, admin: Address, new_total_supply: i128) {
+    pub fn update_token_supply(e: Env, admin: Address, new_total_supply: i128) -> Result<(), Error> {
         admin.require_auth();
         
         let supply_info = TokenSupplyInfo {
@@ -2372,8 +2372,8 @@ impl VestingVault {
             
             // Mock data - replace with actual vault data extraction
             Some(ScheduleData {
-                beneficiary: Address::from_string(&e, &"mock_address".into_val(&e)),
-                asset_address: Address::from_string(&e, &"mock_asset".into_val(&e)),
+                beneficiary: Address::from_string(&e, &String::from_str(&e, "mock_address")),
+                asset_address: Address::from_string(&e, &String::from_str(&e, "mock_asset")),
                 total_amount: 1000i128,
                 claimed_amount: 0i128,
                 start_time: e.ledger().timestamp(),
