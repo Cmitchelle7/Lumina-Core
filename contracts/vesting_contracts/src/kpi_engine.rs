@@ -189,7 +189,7 @@ pub fn verify_kpi(env: &Env, vault_id: u64, caller: &Address) -> bool {
     condition_met
 }
 
-#[contractevent]
+#[event]
 pub struct KpiMetEvent {
     #[topic]
     pub vault_id: u64,
