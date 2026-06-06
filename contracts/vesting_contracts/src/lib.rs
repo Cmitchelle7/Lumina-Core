@@ -486,7 +486,7 @@ pub struct GroupScheduleConfig {
     pub step_duration: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct CliffSmoothedUnlock {
     #[topic]
     pub vault_id: u64,
@@ -499,7 +499,7 @@ pub struct CliffSmoothedUnlock {
     pub timestamp: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct VaultCreated {
     #[topic]
     pub vault_id: u64,
@@ -511,7 +511,7 @@ pub struct VaultCreated {
     pub title: String,
 }
 
-#[contractevent]
+#[event]
 pub struct GovernanceProposalCreated {
     #[topic]
     pub proposal_id: u64,
@@ -521,7 +521,7 @@ pub struct GovernanceProposalCreated {
     pub challenge_end: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct VoteCast {
     #[topic]
     pub proposal_id: u64,
@@ -531,14 +531,14 @@ pub struct VoteCast {
     pub is_yes: bool,
 }
 
-#[contractevent]
+#[event]
 pub struct GovernanceActionExecuted {
     #[topic]
     pub proposal_id: u64,
     pub action: GovernanceAction,
 }
 
-#[contractevent]
+#[event]
 pub struct AdminProposalCreated {
     #[topic]
     pub proposal_id: u64,
@@ -548,7 +548,7 @@ pub struct AdminProposalCreated {
     pub created_at: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct AdminProposalSigned {
     #[topic]
     pub proposal_id: u64,
@@ -557,7 +557,7 @@ pub struct AdminProposalSigned {
     pub signatures: u32,
 }
 
-#[contractevent]
+#[event]
 pub struct AdminProposalExecuted {
     #[topic]
     pub proposal_id: u64,
@@ -566,7 +566,7 @@ pub struct AdminProposalExecuted {
     pub executor: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct VaultRevoked {
     #[topic]
     pub vault_id: u64,
@@ -576,7 +576,7 @@ pub struct VaultRevoked {
     pub treasury: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct VaultSlashed {
     #[topic]
     pub vault_id: u64,
@@ -585,7 +585,7 @@ pub struct VaultSlashed {
     pub treasury: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct VaultRenewed {
     #[topic]
     pub vault_id: u64,
@@ -593,7 +593,7 @@ pub struct VaultRenewed {
     pub amount: i128,
 }
 
-#[contractevent]
+#[event]
 pub struct MarketplaceSold {
     #[topic]
     pub vault_id: u64,
@@ -604,7 +604,7 @@ pub struct MarketplaceSold {
     pub marketplace: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct VaultLegalDocumentsSigned {
     #[topic]
     pub vault_id: u64,
@@ -612,7 +612,7 @@ pub struct VaultLegalDocumentsSigned {
     pub beneficiary: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct TeamRevoked {
     pub vaults_count: u32,
     pub owners: Vec<Address>,
@@ -620,7 +620,7 @@ pub struct TeamRevoked {
     pub treasury: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct PartialRevocation {
     #[topic]
     pub vault_id: u64,
@@ -629,7 +629,7 @@ pub struct PartialRevocation {
     pub treasury: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct BeneficiaryReassigned {
     #[topic]
     pub vault_id: u64,
@@ -642,7 +642,7 @@ pub struct BeneficiaryReassigned {
 }
 
 // Path Payment events for claim_and_swap functionality
-#[contractevent]
+#[event]
 pub struct PathPaymentConfigured {
     pub destination_asset: Address,
     pub min_destination_amount: i128,
@@ -650,12 +650,12 @@ pub struct PathPaymentConfigured {
     pub timestamp: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct PathPaymentDisabled {
     pub timestamp: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct PathPaymentClaimExecuted {
     #[topic]
     pub user: Address,
@@ -1234,7 +1234,7 @@ impl VestingContract {
         is_revocable: bool,
         is_transferable: bool,
         step_duration: u64,
-    ) -> u64 {
+    ) -> Result<u64, Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -1262,7 +1262,7 @@ impl VestingContract {
         is_revocable: bool,
         is_transferable: bool,
         step_duration: u64,
-    ) -> u64 {
+    ) -> Result<u64, Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -1283,7 +1283,7 @@ impl VestingContract {
     /// Create multiple lazy-initialised vaults in a single transaction.
     ///
     /// Returns the list of newly created vault IDs.
-    pub fn batch_create_vaults_lazy(env: Env, data: BatchCreateData) -> Vec<u64> {
+    pub fn batch_create_vaults_lazy(env: Env, data: BatchCreateData) -> Result<Vec<u64>, Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -1311,7 +1311,7 @@ impl VestingContract {
     /// Create multiple fully-initialised vaults in a single transaction.
     ///
     /// Returns the list of newly created vault IDs.
-    pub fn batch_create_vaults_full(env: Env, data: BatchCreateData) -> Vec<u64> {
+    pub fn batch_create_vaults_full(env: Env, data: BatchCreateData) -> Result<Vec<u64>, Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -1354,7 +1354,7 @@ impl VestingContract {
     /// Add multiple vesting schedules in a single transaction.
     ///
     /// Returns the list of newly created vault IDs.
-    pub fn batch_add_schedules(env: Env, schedules: Vec<ScheduleConfig>) -> Vec<u64> {
+    pub fn batch_add_schedules(env: Env, schedules: Vec<ScheduleConfig>) -> Result<Vec<u64>, Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -1960,7 +1960,7 @@ impl VestingContract {
     /// Batch claim tokens from all user's vaults in a single transaction
     /// Aggregates available tokens across all schedules linked to a single Address
     /// Returns a vector of (asset_id, total_claimed_amount) pairs
-    pub fn batch_claim(env: Env, user: Address) -> Vec<(Address, i128)> {
+    pub fn batch_claim(env: Env, user: Address) -> Result<Vec<(Address, i128)>, Error> {
         Self::require_not_paused(&env);
         user.require_auth();
 
@@ -2096,7 +2096,7 @@ impl VestingContract {
     }
 
     /// Legacy single-asset claim function for backward compatibility
-    pub fn claim_tokens(env: Env, vault_id: u64, claim_amount: i128) -> i128 {
+    pub fn claim_tokens(env: Env, vault_id: u64, claim_amount: i128) -> Result<i128, Error> {
         Self::require_not_paused(&env);
         let mut vault = Self::get_vault_internal(&env, vault_id);
         if vault.is_frozen {
@@ -2492,7 +2492,7 @@ impl VestingContract {
         is_transferable: bool,
         step_duration: u64,
         cliff: PerformanceCliff,
-    ) -> u64 {
+    ) -> Result<u64, Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -3094,7 +3094,7 @@ impl VestingContract {
     }
 
     /// Slash the unvested balance of a vault and transfer it to `treasury` (admin only).
-    pub fn slash_unvested_balance(env: Env, vault_id: u64, treasury: Address) {
+    pub fn slash_unvested_balance(env: Env, vault_id: u64, treasury: Address) -> Result<(), Error> {
         Self::require_admin(&env);
         let mut vault = Self::get_vault_internal(&env, vault_id);
 
@@ -3164,7 +3164,7 @@ impl VestingContract {
 
     /// Whitelist a staking contract address so vaults can stake against it.
     /// Only callable by the admin.
-    pub fn add_staking_contract(env: Env, staking_contract: Address) {
+    pub fn add_staking_contract(env: Env, staking_contract: Address) -> Result<(), Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -3179,7 +3179,7 @@ impl VestingContract {
     }
 
     /// Remove a staking contract from the approved whitelist (admin only).
-    pub fn remove_staking_contract(env: Env, staking_contract: Address) {
+    pub fn remove_staking_contract(env: Env, staking_contract: Address) -> Result<(), Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -3213,7 +3213,7 @@ impl VestingContract {
     /// - If the locked balance is zero (`InsufficientBalance`).
     /// - If `staking_contract` is not whitelisted (`UnauthorizedStakingContract`).
     /// - If the caller is neither the vault owner nor the admin.
-    pub fn auto_stake(env: Env, vault_id: u64, staking_contract: Address) {
+    pub fn auto_stake(env: Env, vault_id: u64, staking_contract: Address) -> Result<(), Error> {
         Self::require_not_paused(&env);
         let mut vault = Self::get_vault_internal(&env, vault_id);
         if vault.is_frozen {
@@ -3288,7 +3288,7 @@ impl VestingContract {
     ///
     /// # Panics
     /// - If the vault is not currently staked (`NotStaked`).
-    pub fn manual_unstake(env: Env, vault_id: u64) {
+    pub fn manual_unstake(env: Env, vault_id: u64) -> Result<(), Error> {
         Self::require_not_paused(&env);
         let mut vault = Self::get_vault_internal(&env, vault_id);
         vault.owner.require_auth();
@@ -3374,7 +3374,7 @@ impl VestingContract {
     /// # Panics
     /// - If any vault is marked irrevocable
     /// - If caller is not an admin
-    pub fn batch_revoke_vaults(env: Env, vault_ids: Vec<u64>, treasury: Address) {
+    pub fn batch_revoke_vaults(env: Env, vault_ids: Vec<u64>, treasury: Address) -> Result<(), Error> {
         Self::require_admin(&env);
 
         let mut total_revoked: i128 = 0;
@@ -3473,7 +3473,7 @@ impl VestingContract {
     ///
     /// If the vault is currently staked, it is unstaked first.
     /// Irrevocable vaults cannot be revoked.
-    pub fn revoke_vault(env: Env, vault_id: u64, treasury: Address) {
+    pub fn revoke_vault(env: Env, vault_id: u64, treasury: Address) -> Result<(), Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
@@ -3490,7 +3490,7 @@ impl VestingContract {
     ///
     /// The vault is frozen after the call; the beneficiary may still claim any
     /// tokens that were already vested plus the severance portion.
-    pub fn partial_revoke(env: Env, vault_id: u64, penalty_pct: u32, treasury: Address) {
+    pub fn partial_revoke(env: Env, vault_id: u64, penalty_pct: u32, treasury: Address) -> Result<(), Error> {
         Self::require_admin(&env);
 
         if penalty_pct > 100 {
@@ -3616,7 +3616,7 @@ impl VestingContract {
         vault_id: u64,
         clawback_amount: i128,
         treasury: Address,
-    ) {
+    ) -> Result<(), Error> {
         Self::require_admin(&env);
 
         if clawback_amount <= 0 {
@@ -3856,7 +3856,7 @@ impl VestingContract {
         }
     }
 
-    fn require_not_paused(env: &Env) {
+    fn require_not_paused(env: &Env) -> Result<(), Error> {
         if env
             .storage()
             .instance()
@@ -3883,7 +3883,7 @@ impl VestingContract {
         bridge.require_auth();
     }
 
-    fn require_valid_duration(start: u64, end: u64) {
+    fn require_valid_duration(start: u64, end: u64) -> Result<(), Error> {
         if end <= start {
             return Err(Error::InvalidSchedule);
         }
@@ -5419,7 +5419,7 @@ impl VestingContract {
         is_revocable: bool,
         is_transferable: bool,
         step_duration: u64,
-    ) -> u64 {
+    ) -> Result<u64, Error> {
         // Verify the creator is an accredited investor
         if !ZKVerifier::has_valid_accreditation(&env, owner.clone()) {
             return Err(Error::AccreditationStatusInvalid);
@@ -5556,7 +5556,7 @@ impl VestingContract {
         is_transferable: bool,
         step_duration: u64,
         requires_legal_signatures: bool,
-    ) -> u64 {
+    ) -> Result<u64, Error> {
         Self::require_admin(&env);
         if Self::multisig_active(&env) {
             return Err(Error::MultisigNotActive);
