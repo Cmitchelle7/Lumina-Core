@@ -672,7 +672,7 @@ pub struct VestingContract;
 
 #[contractimpl]
 impl VestingContract {
-    fn dispatch_admin_action(env: Env, action: AdminAction) {
+    fn dispatch_admin_action(env: Env, action: AdminAction) -> Result<(), Error> {
         match action {
             AdminAction::AddAdmin(admin) => {
                 let mut admins = Self::get_admins(env.clone());
@@ -854,7 +854,7 @@ impl VestingContract {
     /// Sign a pending multisig admin proposal.
     ///
     /// Once the quorum threshold is reached the proposal is executed automatically.
-    pub fn sign_admin_proposal(env: Env, signer: Address, proposal_id: u64) {
+    pub fn sign_admin_proposal(env: Env, signer: Address, proposal_id: u64) -> Result<(), Error> {
         signer.require_auth();
         if !Self::is_admin(env.clone(), signer.clone()) {
             return Err(Error::Unauthorized);
@@ -901,7 +901,7 @@ impl VestingContract {
     /// Propose an admin action that requires multisig approval.
     ///
     /// Returns the new proposal ID.
-    pub fn propose_admin_action(env: Env, proposer: Address, action: AdminAction) -> u64 {
+    pub fn propose_admin_action(env: Env, proposer: Address, action: AdminAction) -> Result<u64, Error> {
         proposer.require_auth();
         if !Self::is_admin(env.clone(), proposer.clone()) {
             return Err(Error::Unauthorized);
@@ -1107,7 +1107,7 @@ impl VestingContract {
     ///
     /// Voting power equals the voter's total locked (unvested) token balance.
     /// A "No" vote exceeding 51 % of total locked value cancels the proposal.
-    pub fn vote_on_proposal(env: Env, voter: Address, proposal_id: u64, is_yes: bool) {
+    pub fn vote_on_proposal(env: Env, voter: Address, proposal_id: u64, is_yes: bool) -> Result<(), Error> {
         // Voter must authorize the action
         voter.require_auth();
         let vote_weight = Self::get_voter_locked_value(&env, &voter);
@@ -1166,7 +1166,7 @@ impl VestingContract {
 
     /// Execute a governance proposal after the 72-hour challenge period has elapsed
     /// and the veto threshold has not been reached.
-    pub fn execute_proposal(env: Env, proposal_id: u64) {
+    pub fn execute_proposal(env: Env, proposal_id: u64) -> Result<(), Error> {
         let mut proposal = Self::get_proposal(&env, proposal_id);
         let now = env.ledger().timestamp();
 
@@ -1189,7 +1189,7 @@ impl VestingContract {
             env.storage()
                 .instance()
                 .set(&DataKey::GovernanceProposal(proposal_id), &proposal);
-            return;
+            return Ok(());
         }
 
         // Execute the governance action
@@ -2858,7 +2858,7 @@ impl VestingContract {
         lender: Address,
         asset_id: Address,
         amount: i128,
-    ) -> i128 {
+    ) -> Result<i128, Error> {
         let bridge: Address = env
             .storage()
             .instance()
@@ -2947,7 +2947,7 @@ impl VestingContract {
     }
 
     /// Legacy function for single-asset vaults
-    pub fn claim_by_lender(env: Env, vault_id: u64, lender: Address, amount: i128) -> i128 {
+    pub fn claim_by_lender(env: Env, vault_id: u64, lender: Address, amount: i128) -> Result<i128, Error> {
         let vault = Self::get_vault_internal(&env, vault_id);
         if vault.allocations.len() != 1 {
             return Err(Error::InvalidInput);
@@ -3022,7 +3022,7 @@ impl VestingContract {
             .storage()
             .instance()
             .get(&DataKey::DelegatedBeneficiaries(user))
-            .unwrap_or(vec![&env]);
+            .unwrap_or(Vec::new(&env));
         for delegator in delegators.iter() {
             total_power += Self::calculate_user_own_power(&env, &delegator);
         }
@@ -3051,7 +3051,7 @@ impl VestingContract {
                 .storage()
                 .instance()
                 .get(&DataKey::DelegatedBeneficiaries(old.clone()))
-                .unwrap_or(vec![&env]);
+                .unwrap_or(Vec::new(&env));
             if let Some(idx) = old_list.first_index_of(&beneficiary) {
                 old_list.remove(idx);
                 env.storage()
@@ -3077,7 +3077,7 @@ impl VestingContract {
                 .storage()
                 .instance()
                 .get(&DataKey::DelegatedBeneficiaries(representative.clone()))
-                .unwrap_or(vec![&env]);
+                .unwrap_or(Vec::new(&env));
             if !new_list.contains(&beneficiary) {
                 new_list.push_back(beneficiary.clone());
                 env.storage()
@@ -3088,7 +3088,7 @@ impl VestingContract {
     }
 
     /// Accelerate all vesting schedules by a percentage (must be done via AdminProposal).
-    pub fn accelerate_all_schedules(_env: Env, _percentage: u32) {
+    pub fn accelerate_all_schedules(_env: Env, _percentage: u32) -> Result<(), Error> {
         return Err(Error::MultisigNotActive);
     }
 
@@ -3304,7 +3304,7 @@ impl VestingContract {
     /// # Panics
     /// - If the vault is not currently staked (`NotStaked`).
     /// - If the vault has been revoked (`BeneficiaryRevoked`).
-    pub fn claim_yield(env: Env, vault_id: u64) -> i128 {
+    pub fn claim_yield(env: Env, vault_id: u64) -> Result<i128, Error> {
         Self::require_not_paused(&env);
         let vault = Self::get_vault_internal(&env, vault_id);
 
@@ -4355,7 +4355,7 @@ impl VestingContract {
 
     /// Internal: perform the unstake operation against the staking contract and
     /// update vault + stake_info state. Caller must have already loaded `vault`.
-    fn do_unstake(env: &Env, vault_id: u64, vault: &mut crate::Vault) {
+    fn do_unstake(env: &Env, vault_id: u64, vault: &mut crate::Vault) -> Result<(), Error> {
         let mut stake_info = get_stake_info(env, vault_id);
 
         let staking_contract = match &stake_info.stake_state {
@@ -4395,6 +4395,7 @@ impl VestingContract {
         call_unstake_tokens(env, &staking_contract, &vault.owner, vault_id);
 
         stake::emit_unstaked(env, vault_id, &vault.owner, unstaked_amount);
+        Ok(())
     }
 
     /// Mark a vault as revoked in the global revoked-vaults set.
