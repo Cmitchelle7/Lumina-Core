@@ -489,7 +489,7 @@ impl BeneficiaryReassignment {
 }
 
 /// Events for beneficiary reassignment
-#[contractevent]
+#[event]
 pub struct ReassignmentRequested {
     #[topic]
     pub vault_id: u64,
@@ -502,7 +502,7 @@ pub struct ReassignmentRequested {
     pub reason: String,
 }
 
-#[contractevent]
+#[event]
 pub struct ReassignmentApproved {
     #[topic]
     pub vault_id: u64,
@@ -512,7 +512,7 @@ pub struct ReassignmentApproved {
     pub required_approvals: u32,
 }
 
-#[contractevent]
+#[event]
 pub struct ReassignmentCompleted {
     #[topic]
     pub vault_id: u64,
@@ -523,7 +523,7 @@ pub struct ReassignmentCompleted {
     pub completed_at: u64,
 }
 
-#[contractevent]
+#[event]
 pub struct EmergencyReassignment {
     #[topic]
     pub vault_id: u64,
