@@ -361,7 +361,7 @@ impl LegalSAFTManager {
 }
 
 /// Events for legal document operations
-#[contractevent]
+#[event]
 pub struct LegalDocumentAnchored {
     #[topic]
     pub vault_id: u64,
@@ -376,7 +376,7 @@ pub struct LegalDocumentAnchored {
     pub version: String,
 }
 
-#[contractevent]
+#[event]
 pub struct DocumentSigned {
     #[topic]
     pub vault_id: u64,
@@ -388,7 +388,7 @@ pub struct DocumentSigned {
     pub message: String,
 }
 
-#[contractevent]
+#[event]
 pub struct AllDocumentsSigned {
     #[topic]
     pub vault_id: u64,
@@ -396,7 +396,7 @@ pub struct AllDocumentsSigned {
     pub beneficiary: Address,
 }
 
-#[contractevent]
+#[event]
 pub struct LegalDocumentRevoked {
     #[topic]
     pub document_hash: BytesN<32>,
